@@ -61,11 +61,11 @@
               </a>
             </div>
             <!-- end ngIf: isShowReader -->
-            <div class="tab_item no_extra" @click="changeTab('contact')">
+            <div class="tab_item no_extra" @click="changeTab('contacts')">
               <a class="chat" title="通讯录" href="#">
                 <i
                   class="web_wechat_tab_friends"
-                  :class="{web_wechat_tab_friends_hl: current.name === 'contact'}"
+                  :class="{web_wechat_tab_friends_hl: current.name === 'contacts'}"
                 ></i>
               </a>
             </div>
@@ -177,9 +177,7 @@
         <!--END contextMenu-->
       </div>
       <p class="copyright">
-        <span>© 1998 - 2020 Tencent Inc. All Rights Reserved</span>
-        <span class="sep"></span>
-        <a href="https://login.weixin.qq.com/faq_webwx?lang=en" target="_blank">Help</a>
+        <span>© wozaizhao</span>
       </p>
     </div>
   </div>
@@ -232,7 +230,7 @@ export default {
       }
     })
     this.sockets.subscribe('contacts', (contacts) => {
-      self.contacts = contacts
+      self.contacts = contacts.filter(ele => { return ele.payload.type === 1 })
     })
   },
   computed: {

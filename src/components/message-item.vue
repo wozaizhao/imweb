@@ -1,6 +1,6 @@
 <template>
   <div class="message" :class="{me: message.self}">
-    <p class="nickname">{{message.from.payload.name}}</p>
+    <p class="nickname">{{message.from.payload.alias ? message.from.payload.alias : message.from.payload.name }}</p>
     <div class="avatar" style="width:40px;height:40px;background:#ddd;line-height:40px;text-align:center;">
     </div>
     <div class="content">

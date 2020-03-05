@@ -10,8 +10,8 @@ import './assets/styles.css'
 Vue.config.productionTip = false
 Vue.use(new VueSocketIO({
   debug: true,
-  connection: 'http://127.0.0.1:4040'
-  // connection: 'https://imapi.wozaizhao.com'
+  // connection: 'http://127.0.0.1:4040'
+  connection: 'https://imapi.wozaizhao.com'
 }))
 
 /* eslint-disable no-new */

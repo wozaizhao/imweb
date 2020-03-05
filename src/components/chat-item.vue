@@ -14,7 +14,7 @@
       </div>
       <div class="info">
         <h3 class="nickname">
-          <span class="nickname_text">{{contact.name}}</span>
+          <span class="nickname_text">{{contact.alias ? contact.alias : contact.name}}</span>
         </h3>
         <p class="msg" v-if="contact.text">
           <span>
