@@ -7717,11 +7717,12 @@ body.ngdialog-open {
 }
 
 .panel.give_me .nav_view {
-  top: 204px
+  /* top: 204px */
 }
 
 .nav_view {
-  /* position: absolute; */
+  position: absolute;
+  overflow-y: scroll;
   top: 154px;
   right: 0;
   bottom: 0;

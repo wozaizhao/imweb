@@ -89,7 +89,7 @@
 
           </div>
 
-            <div class="nav_view" :style="{visibility:current.name ==='chat'?'visible':'hidden',width:current.name ==='chat'?'auto':'0'}">
+            <div class="nav_view" v-show="current.name === 'chat'">
               <!--BEGIN chat list-->
               <div class="chat_list" style="position:relative;">
                 <!-- <p class="ico_loading" v-if="chatList.length === 0">
@@ -100,12 +100,9 @@
             <!--END chat list-->
           </div>
 
-          <div class="nav_view" :style="{visibility:current.name ==='contacts'?'visible':'hidden',width:current.name ==='contacts'?'auto':'0'}">
+          <div class="nav_view" v-show="current.name === 'contacts'">
               <!--BEGIN chat list-->
               <div class="chat_list" style="position:relative;">
-                <!-- <p class="ico_loading" v-if="chatList.length === 0">
-                  <img src="../assets/loading.gif" alt />Loading...
-                </p> -->
                     <chat-item v-for="contact in contacts" :contact="contact.payload" :key="contact.id" @item-click="onItemClick"></chat-item>
             </div>
             <!--END chat list-->
@@ -129,7 +126,7 @@
                 </div>
             </div>
             </div>
-            <div class="box_bd chat_bd" style="position:absolute;">
+            <div id="talk" class="box_bd chat_bd" style="position:absolute;">
               <div v-if="currentMessages.length === 0" class="message_empty">
                 <i class="web_wechat_nomes_icon"></i>
                 <p v-if="currentContact.name === ''" class="">No chats selected</p>
@@ -238,13 +235,31 @@ export default {
       account: state => state.user.account
     })
   },
+  watch: {
+    currentMessages () {
+      this.gotoEnd()
+    }
+  },
   methods: {
+    gotoEnd () {
+      this.$nextTick(() => {
+        let container = this.$el.querySelector('#talk')
+        container.scrollTop = container.scrollHeight
+      })
+    },
+    htmlDecode (e) {
+      return e && e.length !== 0 ? e.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&') : ''
+    },
+    clearHtmlStr (e) {
+      return e ? e.replace(/<[^>]*>/g, '') : e
+    },
     changeTab (tab) {
       console.log(tab)
       this.current.name = tab
     },
     sendMessage () {
-      let message = document.getElementById('editArea').childNodes[0].nodeValue
+      let message = document.getElementById('editArea').innerHTML
+      message = this.clearHtmlStr(message)
       if (message) {
         let room = this.isRoomContact(this.currentContact.id)
         let name = this.currentContact.name
@@ -254,7 +269,7 @@ export default {
           message
         }
         this.$socket.emit('sendmessage', msg)
-        document.getElementById('editArea').childNodes[0].nodeValue = ''
+        document.getElementById('editArea').innerHTML = ''
       }
     },
     onItemClick (contact) {

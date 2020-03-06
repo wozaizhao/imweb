@@ -17,8 +17,7 @@
           <span class="nickname_text">{{contact.alias ? contact.alias : contact.name}}</span>
         </h3>
         <p class="msg" v-if="contact.text">
-          <span>
-            {{contact.text}}
+          <span v-html="contact.text">
           </span>
         </p>
       </div>

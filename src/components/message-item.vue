@@ -1,10 +1,10 @@
 <template>
   <div class="message" :class="{me: message.self}">
-    <p class="nickname">{{message.from.payload.alias ? message.from.payload.alias : message.from.payload.name }}</p>
+    <span class="nickname" v-show="!message.self">{{message.from.payload.alias ? message.from.payload.alias : message.from.payload.name }}</span>
     <div class="avatar" style="width:40px;height:40px;background:#ddd;line-height:40px;text-align:center;">
     </div>
     <div class="content">
-      <div class="bubble js_message_bubble bubble_primary right">
+      <div class="bubble js_message_bubble bubble_primary" :class="{right: message.self, left: !message.self}">
         <div class="bubble_cont">
           <div class="plain">
             <pre class="js_message_plain" v-html="message.text"></pre>
