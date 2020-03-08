@@ -27,12 +27,7 @@
           <!--BEGIN search-->
           <div class="search_bar" id="search_bar">
             <i class="web_wechat_search"></i>
-            <input
-              class="frm_search"
-              type="text"
-              v-model="keyword"
-              placeholder="Search"
-            />
+            <input class="frm_search" type="text" @input="onSearch" v-model="keyword" placeholder="Search" />
           </div>
           <!--END search-->
 
@@ -205,6 +200,7 @@ export default {
       chatMessages: {},
       contacts: [],
       allContacts: [],
+      contactsByFilter: [],
       rooms: {}
     }
   },
@@ -234,10 +230,10 @@ export default {
   computed: {
     ...mapState({
       account: state => state.user.account
-    }),
-    contactsByFilter () {
-      return this.allContacts.filter(ele => ele.payload.name.indexOf(this.keyword) > -1 || ele.payload.alias.indexOf(this.keyword) > -1)
-    }
+    })
+    // contactsByFilter () {
+    //   return this.allContacts.filter(ele => ele.payload.name.indexOf(this.keyword) > -1 || ele.payload.alias.indexOf(this.keyword) > -1)
+    // }
   },
   watch: {
     currentMessages () {
@@ -245,6 +241,12 @@ export default {
     }
   },
   methods: {
+    onSearch () {
+      let keyword = this.keyword.trim()
+      if (keyword !== '') {
+        this.contactsByFilter = this.allContacts.filter(ele => ele.payload.name.indexOf(this.keyword) > -1 || ele.payload.alias.indexOf(this.keyword) > -1)
+      }
+    },
     infiniteHandler ($state) {
       if (this.allContacts.length) {
         let len = this.allContacts.length > 10 ? 10 : this.allContacts.length
@@ -268,6 +270,7 @@ export default {
     },
     changeTab (tab) {
       this.current.name = tab
+      this.keyword = ''
       if (tab === 'contacts' && this.allContacts.length === 0 && this.contacts.length === 0) {
         this.$socket.emit('getcontacts')
       }
