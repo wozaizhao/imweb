@@ -7,11 +7,11 @@ import router from './router'
 import store from './store'
 import './assets/styles.css'
 
+console.log(process.env)
 Vue.config.productionTip = false
 Vue.use(new VueSocketIO({
   debug: true,
-  // connection: 'http://127.0.0.1:4040'
-  connection: 'https://imapi.wozaizhao.com'
+  connection: process.env.API
 }))
 
 /* eslint-disable no-new */

@@ -7,10 +7,9 @@
           <i class="web_wechat_no-remind" :class="{'web_wechat_no-remind_hl': (chatContact.UserName == currentUserName)}" ></i>
         </p> -->
       </div>
-      <div class="avatar" style="width:40px;height:40px;background:#ddd;line-height:40px;text-align:center;">
-        <!-- <img :src="'https://wx.qq.com/'+contact.avatar" /> -->
-
-        <!-- {{getLastLetter(contact.name)}} -->
+      <div class="avatar">
+        <img class="img" @error="avatarLoadOnError()" :src="avatarUrl"/>
+        <!-- <img class="img" @error="avatarLoadOnError(contact.name)" :src="baseUrl + avatar" /> -->
       </div>
       <div class="info">
         <h3 class="nickname">
@@ -39,7 +38,31 @@ export default {
     top: {
       type: Boolean,
       default: false
+    },
+    room: {
+      type: Boolean,
+      default: false
     }
+  },
+  data () {
+    return {
+      baseUrl: process.env.API,
+      avatar: this.contact.name + '-avatar.jpg',
+      default: null,
+      avatarUrl: null
+    }
+  },
+  mounted () {
+    this.default = this.room ? require('../assets/avatar_group.png') : require('../assets/avatar_contact.png')
+    this.avatarUrl = this.default
+    fetch(this.baseUrl + this.avatar).then((res) => {
+      if (res.status === 404) {
+        console.log('404')
+        this.$socket.emit('getavatar', {room: false, name: this.contact.name})
+      } else if (res.status === 200) {
+        this.setAvatart()
+      }
+    })
   },
   methods: {
     getLastLetter (name) {
@@ -47,6 +70,20 @@ export default {
     },
     itemClick () {
       this.$emit('item-click', this.contact)
+    },
+    setAvatart () {
+      this.avatarUrl = this.baseUrl + this.avatar
+    },
+    avatarLoadOnError () {
+      this.avatarUrl = this.default
+    }
+  },
+  sockets: {
+    avatar: function (name) {
+      console.log('avatar ok')
+      if (this.contact.name === name) {
+        this.setAvatart()
+      }
     }
   }
 }

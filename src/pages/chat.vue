@@ -2,13 +2,10 @@
   <div class="chat" :class="{loaded:isLoaded,unlogin:isUnLogin}">
     <div class="main">
       <div class="main_inner">
-        <!--BEGIN panel-->
-        <!--inline[views/panel.html]-->
         <div class="panel give_me" :class="{give_me: showDownloadEntry}">
-          <!--BEGIN header-->
           <div class="header">
             <div class="avatar">
-              <!-- <img :src="'https://wx.qlogo.cn' + account.avatar" /> -->
+              <img class="img" :src="baseUrl + account.name + '-avatar.jpg'"/>
             </div>
             <div class="info">
               <h3 class="nickname">
@@ -31,11 +28,9 @@
           <div class="search_bar" id="search_bar">
             <i class="web_wechat_search"></i>
             <input
-              class="frm_search ng-isolate-scope ng-pristine ng-valid"
+              class="frm_search"
               type="text"
               v-model="keyword"
-              @input="search($event)"
-              @keydown="searchKeydown($event)"
               placeholder="Search"
             />
           </div>
@@ -70,9 +65,6 @@
               </a>
             </div>
           </div>
-          <!--END tab-->
-
-          <!--BEGIN download entry-->
           <div class="download_entry" v-if="showDownloadEntry">
             <a href=" " class="opt">
                 <i class="ChatListBanner_Close"></i>
@@ -81,46 +73,29 @@
                <a href="https://mac.weixin.qq.com?lang=en" target="_blank">Download WeChat for Mac</a>
             </p>
         </div>
-          <!--END download entry-->
-
-          <!--BEGIN nav view-->
-          <!-- uiView: navView -->
-          <div id="navView">
-
-          </div>
-
-            <div class="nav_view" v-show="current.name === 'chat'">
-              <!--BEGIN chat list-->
-              <div class="chat_list" style="position:relative;">
-                <!-- <p class="ico_loading" v-if="chatList.length === 0">
-                  <img src="../assets/loading.gif" alt />Loading...
-                </p> -->
-                    <chat-item v-for="contact in chatListInfos" :contact="contact" :key="contact.name" @item-click="onItemClick"></chat-item>
+          <div class="nav_view" v-show="!!keyword">
+            <div class="chat_list" style="position:relative;">
+              <chat-item v-for="contact in contactsByFilter" :contact="contact.payload" :key="contact.id" @item-click="onItemClick"></chat-item>
             </div>
-            <!--END chat list-->
           </div>
-
-          <div class="nav_view" v-show="current.name === 'contacts'">
-              <!--BEGIN chat list-->
-              <div class="chat_list" style="position:relative;">
-                    <chat-item v-for="contact in contacts" :contact="contact.payload" :key="contact.id" @item-click="onItemClick"></chat-item>
+          <div class="nav_view" v-show="current.name === 'chat' && !!!keyword">
+            <div class="chat_list" style="position:relative;">
+              <chat-item :room="isRoomContact(contact.id)" v-for="contact in chatListInfos" :contact="contact" :key="contact.name" @item-click="onItemClick"></chat-item>
             </div>
-            <!--END chat list-->
           </div>
-
-          <!--</div>-->
-          <!--END nav view-->
+          <div class="nav_view" v-show="current.name === 'contacts' && !!!keyword">
+            <div class="chat_list" style="position:relative;">
+              <chat-item v-for="contact in contacts" :contact="contact.payload" :key="contact.id" @item-click="onItemClick"></chat-item>
+              <infinite-loading @infinite="infiniteHandler"></infinite-loading>
+            </div>
+          </div>
         </div>
-        <!--END panel-->
-
-        <!--BEGIN chat-->
-        <!-- uiView: contentView -->
         <div style="height:100%">
           <div id="chatArea" class="box chat no-choose">
             <div class="box_hd">
               <div class="title_wrap">
                 <div class="title poi">
-                    <a class="title_name">{{currentContact.name}}</a>
+                    <a class="title_name">{{currentContact.alias ? currentContact.alias : currentContact.name}}</a>
                     <!-- <span class="title_count">(59)</span> -->
                     <!-- <i class="web_wechat_down_icon"></i> -->
                 </div>
@@ -133,7 +108,7 @@
                 <p v-else-if="currentMessages.length === 0" class="">No new messages</p>
               </div>
               <div v-else>
-                <message-item :message="message" v-for="(message, i) in currentMessages" :key="i"></message-item>
+                <message-item :message="message" v-for="message in currentMessages" :key="message.timestamp"></message-item>
               </div>
             </div>
             <div class="box_ft">
@@ -158,7 +133,6 @@
             <!-- <div class="catch-drop-area"></div> -->
           </div>
         </div>
-        <!--END chat-->
 
         <!--BEGIN contextMenu-->
         <!-- <div
@@ -181,17 +155,38 @@
 </template>
 
 <script>
+
 import { mapState } from 'vuex'
+import InfiniteLoading from 'vue-infinite-loading'
 import chatItem from '../components/chat-item'
 import messageItem from '../components/message-item'
+
+// function notifyMe () {
+//   if (!('Notification' in window)) {
+//     alert('This browser does not support desktop notification')
+//   } else if (Notification.permission === 'granted') {
+//     // If it's okay let's create a notification
+//     var notification = new Notification('Hi there!')
+//   } else if (Notification.permission !== 'denied') {
+//     Notification.requestPermission(function (permission) {
+//       // 如果用户同意，就可以向他们发送通知
+//       if (permission === 'granted') {
+//         var notification = new Notification('Hi there!')
+//       }
+//     })
+//   }
+// }
+
 export default {
   name: 'chat',
   components: {
+    InfiniteLoading,
     chatItem,
     messageItem
   },
   data () {
     return {
+      baseUrl: process.env.API,
       isLoaded: true,
       isUnLogin: true,
       showDownloadEntry: false,
@@ -209,13 +204,16 @@ export default {
       chatListInfos: [],
       chatMessages: {},
       contacts: [],
+      allContacts: [],
       rooms: {}
     }
   },
   mounted () {
+    // notifyMe()
     let self = this
     this.sockets.subscribe('message', (message) => {
-      if (message.type === 7) {
+      if (message.type === 7 || message.type === 6) {
+        message.timestamp = new Date().getTime()
         let id = message.room ? message.room.id : message.self ? message.to.id : message.from.id
         if (!self.chatMessages[id]) {
           self.chatMessages[id] = []
@@ -223,17 +221,23 @@ export default {
         self.chatMessages[id].push(message)
         self.addChatList(id)
       } else {
-        console.log('not text message')
+        console.log('not text or img message')
       }
     })
     this.sockets.subscribe('contacts', (contacts) => {
-      self.contacts = contacts.filter(ele => { return ele.payload.type === 1 })
+      self.allContacts = contacts
+      // self.allContacts = contacts.filter(ele => { return ele.payload.type === 1 })
+      self.contacts = self.allContacts.splice(0, 20)
+      // this.$socket.emit('getavatar', {room: false, name: contacts[0].payload.name})
     })
   },
   computed: {
     ...mapState({
       account: state => state.user.account
-    })
+    }),
+    contactsByFilter () {
+      return this.allContacts.filter(ele => ele.payload.name.indexOf(this.keyword) > -1 || ele.payload.alias.indexOf(this.keyword) > -1)
+    }
   },
   watch: {
     currentMessages () {
@@ -241,6 +245,15 @@ export default {
     }
   },
   methods: {
+    infiniteHandler ($state) {
+      if (this.allContacts.length) {
+        let len = this.allContacts.length > 10 ? 10 : this.allContacts.length
+        this.contacts.push(...this.allContacts.splice(0, len))
+        $state.loaded()
+      } else {
+        $state.complete()
+      }
+    },
     gotoEnd () {
       this.$nextTick(() => {
         let container = this.$el.querySelector('#talk')
@@ -254,8 +267,10 @@ export default {
       return e ? e.replace(/<[^>]*>/g, '') : e
     },
     changeTab (tab) {
-      console.log(tab)
       this.current.name = tab
+      if (tab === 'contacts' && this.allContacts.length === 0 && this.contacts.length === 0) {
+        this.$socket.emit('getcontacts')
+      }
     },
     sendMessage () {
       let message = document.getElementById('editArea').innerHTML
@@ -274,7 +289,7 @@ export default {
     },
     onItemClick (contact) {
       this.currentContact = contact
-      this.currentMessages = this.getChatMessage(contact.id)
+      this.currentMessages = this.getChatMessage(contact.id) || []
     },
     sendTextMessage () {
     },
@@ -324,12 +339,14 @@ export default {
         let room = lastMsg.room
         let name = room ? room.payload.topic : lastMsg.self ? lastMsg.to.payload.name : lastMsg.from.payload.name
         let avatar = room ? '' : lastMsg.self ? lastMsg.to.payload.avatar : lastMsg.from.payload.avatar
-        let text = lastMsg.text
+        let text = lastMsg.type === 7 ? lastMsg.text : lastMsg.type === 6 ? '[image]' : ''
+        let alias = room ? '' : lastMsg.self ? lastMsg.to.payload.alias : lastMsg.from.payload.alias
         _chatListFull.push({
           id: chat,
           name,
           avatar,
-          text
+          text,
+          alias
         })
       })
       this.chatListInfos = _chatListFull
@@ -360,7 +377,7 @@ export default {
     },
     _getLastMessage (id) {
       let messages = this.getChatMessage(id)
-      return messages.length ? messages[messages.length - 1] : {}
+      return messages && messages.length ? messages[messages.length - 1] : {}
       // var t = this
       //   , a = t.getChatMessage(e);
       // return a.length ? a[a.length - 1] : {}
