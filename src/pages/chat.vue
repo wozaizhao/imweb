@@ -27,7 +27,7 @@
           <!--BEGIN search-->
           <div class="search_bar" id="search_bar">
             <i class="web_wechat_search"></i>
-            <input class="frm_search" type="text" @input="onSearch" v-model="keyword" placeholder="Search" />
+            <input class="frm_search" type="text" @focus="onFocus" @input="onSearch" v-model="keyword" placeholder="Search" />
           </div>
           <!--END search-->
 
@@ -110,12 +110,13 @@
                 <div class="toolbar" id="tool_bar">
                     <!-- <a class="web_wechat_face" ng-click="showEmojiPanel($event)" href="javascript:;" title="Stickers"></a> -->
                     <!-- <a mm-action-track="" track-type="['click']" track-opt="{'target':'截图'}" class="web_wechat_screencut ng-isolate-scope" ng-hide="noflash" ng-click="screenShot()" href="javascript:;" title="Screenshot"></a> -->
-                    <a class="web_wechat_pic js_fileupload webuploader-container" href="javascript:;" title="Image and File"><div class="webuploader-pick"></div>
-                    <div id="rt_rt_1e2dondomgmj1btj154u1bt115md1" style="position: absolute; top: 0px; left: 0px; width: 30px; height: 30px; overflow: hidden; bottom: auto; right: auto;">
-                      <!-- <input type="file" name="file" class="webuploader-element-invisible" multiple="multiple">
-                      <label style="opacity: 0; width: 100%; height: 100%; display: block; cursor: pointer; background: rgb(255, 255, 255);"></label> -->
-                      </div
-                      ></a>
+                    <a class="web_wechat_pic" href="javascript:;" title="Image and File" @click="onUpload">
+                      <div class="webuploader-pick"></div>
+                      <div style="position: absolute; top: 0px; left: 0px; width: 30px; height: 30px; overflow: hidden; bottom: auto; right: auto;">
+                        <input ref="upload" type="file" name="file" class="webuploader-element-invisible" @change="uploadFile">
+                        <label style="opacity: 0; width: 100%; height: 100%; display: block; cursor: pointer; background: rgb(255, 255, 255);"></label>
+                      </div>
+                    </a>
                 </div>
                 <div class="content">
                     <pre id="editArea" class="flex edit_area" contenteditable @keyup.enter="sendMessage"></pre>
@@ -201,7 +202,9 @@ export default {
       contacts: [],
       allContacts: [],
       contactsByFilter: [],
-      rooms: {}
+      rooms: {},
+      file: null,
+      fileReader: new FileReader()
     }
   },
   mounted () {
@@ -226,6 +229,12 @@ export default {
       self.contacts = self.allContacts.splice(0, 20)
       // this.$socket.emit('getavatar', {room: false, name: contacts[0].payload.name})
     })
+    this.sockets.subscribe('requestslice', (data) => {
+      console.log(data)
+      let place = data.currentSlice * 100000
+      let slice = this.file.slice(place, place + Math.min(100000, this.file.size - place))
+      this.fileReader.readAsArrayBuffer(slice)
+    })
   },
   computed: {
     ...mapState({
@@ -241,6 +250,33 @@ export default {
     }
   },
   methods: {
+    onFocus (e) {
+      if (this.allContacts.length === 0 && this.contacts.length === 0) {
+        this.$socket.emit('getcontacts')
+      }
+    },
+    uploadFile (e) {
+      let self = this
+      const { files } = e.target
+      console.log(files)
+      this.file = files[0]
+      let slice = this.file.slice(0, 100000)
+      this.fileReader.readAsArrayBuffer(slice)
+      this.fileReader.onload = (event) => {
+        let arrayBuffer = this.fileReader.result
+        self.$socket.emit('upload', {
+          room: this.isRoomContact(this.currentContact.id),
+          contactname: this.currentContact.name,
+          name: this.file.name,
+          type: this.file.type,
+          size: this.file.size,
+          data: arrayBuffer
+        })
+      }
+    },
+    onUpload () {
+      this.$refs.upload.click()
+    },
     onSearch () {
       let keyword = this.keyword.trim()
       if (keyword !== '') {
