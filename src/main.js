@@ -6,8 +6,10 @@ import App from './App'
 import router from './router'
 import store from './store'
 import './assets/styles.css'
-
+import 'viewerjs/dist/viewer.css'
+import Viewer from 'v-viewer'
 console.log(process.env)
+Vue.use(Viewer)
 Vue.config.productionTip = false
 Vue.use(new VueSocketIO({
   debug: true,

@@ -156,7 +156,7 @@ import { mapState } from 'vuex'
 import InfiniteLoading from 'vue-infinite-loading'
 import chatItem from '../components/chat-item'
 import messageItem from '../components/message-item'
-
+import Push from 'push.js'
 // function notifyMe () {
 //   if (!('Notification' in window)) {
 //     alert('This browser does not support desktop notification')
@@ -219,6 +219,12 @@ export default {
         }
         self.chatMessages[id].push(message)
         self.addChatList(id)
+        const name = message.room ? message.roomName : message.contactName
+        let text = self.clearHtmlStr(message.text)
+        text = message.room ? message.contactName + ': ' + text : text
+        if (name !== '陈轶超') {
+          self.pushMessage(name, text)
+        }
       } else {
         console.log('not text or img message')
       }
@@ -250,6 +256,14 @@ export default {
     }
   },
   methods: {
+    pushMessage (title, message) {
+      console.log('pushMessage')
+      Push.create(title, {
+        body: message,
+        requireInteraction: true,
+        timeout: 5000
+      })
+    },
     onFocus (e) {
       if (this.allContacts.length === 0 && this.contacts.length === 0) {
         this.$socket.emit('getcontacts')

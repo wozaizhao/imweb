@@ -5,8 +5,13 @@
 </template>
 
 <script>
+import Push from 'push.js'
+
 export default {
-  name: 'App'
+  name: 'App',
+  created () {
+    Push.Permission.request()
+  }
 }
 </script>
 

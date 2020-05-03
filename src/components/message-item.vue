@@ -31,7 +31,9 @@
       <div class="bubble js_message_bubble bubble_default no_arrow" :class="{right: message.self, left: !message.self}">
         <div class="bubble_cont">
           <div class="picture">
-            <img class="msg-img" :src="baseUrl + 'pic/' + message.text" alt="">
+            <viewer>
+              <img class="msg-img" :src="baseUrl + 'pic/' + message.text" alt="">
+            </viewer>
           </div>
         </div>
       </div>
